@@ -112,7 +112,9 @@ def add_new_drink(payload):
 @app.route('/drinks/<int:drink_id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
 def edit_drink(payload, drink_id):
+
     edited_drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
+
     if not edited_drink:
         abort(404)
     try:
@@ -121,20 +123,23 @@ def edit_drink(payload, drink_id):
         if body is None:
             abort(400)
         title = body.get('title', None)
+        if title:
+            print('title', title)
+            edited_drink.title = title
         # print('title', len(title), title)
         recipe = body.get('recipe', None)
-        # print('recipe', recipe)
-        if (not title) or (not recipe):
-            abort(400)
-        # print('json_recipe', json.dumps(recipe))
-        edited_drink = Drink(title=title, recipe=json.dumps(recipe))
+        if recipe:
+            print('recipe', recipe)
+            edited_drink.recipe = json.dumps(recipe)
+        print('update drink')
         edited_drink.update()
+        print('updated')
         return jsonify({
             'success': True,
             'drinks': edited_drink.long()
         })
-    except BaseException:
-        # print(sys.exc_info())
+    except:
+        print(sys.exc_info())
         abort(422)
 
 
@@ -150,7 +155,7 @@ def edit_drink(payload, drink_id):
 '''
 
 
-@app.route('/drinks/<int:drink_id>', methods=['PATCH'])
+@app.route('/drinks/<int:drink_id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
 def delete_drink(payload, drink_id):
     drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
@@ -250,3 +255,11 @@ def forbidden(error):
         'error': 403,
         'message': "forbidden"
     }), 403
+
+@app.errorhandler(AuthError)
+def auth_error(error):
+    return jsonify({
+        'success': False,
+        'error': 401,
+        'message': error.args[0]['code']
+    }), 401
